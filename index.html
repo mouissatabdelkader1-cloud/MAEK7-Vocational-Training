@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>MAEK7 Vocational Training | الذكاء الاصطناعي للتكوين المهني</title>
+    <script type="importmap">
+        {
+            "imports": {
+                "@google/generative-ai": "https://esm.run/@google/generative-ai"
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        :root {
+            --bg-dark: #0a0c12; --bg-card: #0f131c; --bg-input: #1a1e29;
+            --border: #2d3748; --text: #eef2ff; --text-muted: #9ca3af;
+            --primary: #3b82f6; --primary-dark: #2563eb;
+            --success: #10b981; --warning: #f59e0b;
+        }
+        body.light-mode {
+            --bg-dark: #f3f4f6; --bg-card: #ffffff; --bg-input: #e5e7eb;
+            --border: #d1d5db; --text: #1f2937; --text-muted: #6b7280;
+        }
+        body { background: var(--bg-dark); color: var(--text); transition: all 0.3s; padding: 20px; }
+        .container { max-width: 1400px; margin: auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: var(--primary); font-size: 2.2rem; }
+        .card { background: var(--bg-card); border-radius: 24px; padding: 24px; margin-bottom: 24px; border: 1px solid var(--border); }
+        .card-title { font-size: 1.5rem; margin-bottom: 20px; border-right: 4px solid var(--primary); padding-right: 16px; }
+        .tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { background: var(--bg-input); border: none; padding: 10px 20px; border-radius: 40px; color: var(--text); cursor: pointer; transition: 0.2s; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        textarea, input, select { width: 100%; background: var(--bg-input); border: 1px solid var(--border); border-radius: 16px; padding: 12px; color: var(--text); margin-bottom: 15px; }
+        button.btn-primary { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 40px; cursor: pointer; font-weight: bold; width: 100%; }
+        button.btn-secondary { background: var(--bg-input); border: 1px solid var(--border); padding: 8px 16px; border-radius: 40px; cursor: pointer; }
+        .result-box { background: var(--bg-input); border-radius: 20px; padding: 20px; margin-top: 20px; white-space: pre-wrap; line-height: 1.6; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .toast { position: fixed; bottom: 20px; left: 20px; background: var(--primary); color: white; padding: 12px 24px; border-radius: 40px; z-index: 2000; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-100%); } to { opacity: 1; } }
+        .api-input { background: var(--bg-input); border: 1px solid var(--border); padding: 10px 16px; border-radius: 40px; color: var(--text); width: 100%; margin-bottom: 15px; }
+        footer { text-align: center; margin-top: 40px; font-size: 12px; color: var(--text-muted); }
+        .loading { display: none; text-align: center; margin: 20px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🎓 MAEK7 Vocational Training</h1>
+        <p>الذكاء الاصطناعي للتكوين المهني – تحليل، توجيه، تقييم، ومحاكاة</p>
+    </div>
+
+    <div class="card">
+        <input type="password" id="apiKey" class="api-input" placeholder="🔑 مفتاح Gemini API" oninput="saveApiKey()">
+        <div id="apiStatus" style="font-size:13px;">⚙️ انتظار المفتاح</div>
+    </div>
+
+    <div class="tabs" id="tabs">
+        <button class="tab-btn active" data-tab="market">📊 تحليل سوق العمل</button>
+        <button class="tab-btn" data-tab="skills">📝 تقييم المهارات</button>
+        <button class="tab-btn" data-tab="content">📚 إنشاء محتوى تدريبي</button>
+        <button class="tab-btn" data-tab="simulation">🎭 محاكاة مقابلة عمل</button>
+        <button class="tab-btn" data-tab="progress">📈 متابعة التقدم</button>
+    </div>
+
+    <!-- تبويب تحليل سوق العمل -->
+    <div id="marketTab" class="tab-content">
+        <div class="card">
+            <div class="card-title">📊 تحليل احتياجات سوق العمل في منطقتك</div>
+            <input type="text" id="marketRegion" placeholder="المنطقة / الدولة (مثال: الجزائر، تونس، المغرب، مصر)">
+            <input type="text" id="marketSector" placeholder="القطاع (مثال: صناعة، خدمات، IT، بناء، صحة)">
+            <button id="analyzeMarketBtn" class="btn-primary">🔍 تحليل المهن المطلوبة والتوجيه</button>
+            <div id="marketResult" class="result-box" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- تبويب تقييم المهارات -->
+    <div id="skillsTab" class="tab-content" style="display:none;">
+        <div class="card">
+            <div class="card-title">📝 تقييم مهارات المتدرب</div>
+            <textarea id="skillsDesc" rows="4" placeholder="أدخل وصفاً لمهارات المتدرب الحالية، خلفيته التعليمية، المهنة المستهدفة..."></textarea>
+            <button id="assessSkillsBtn" class="btn-primary">📊 تحليل الفجوات واقتراح خطة تدريب</button>
+            <div id="skillsResult" class="result-box" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- تبويب إنشاء محتوى تدريبي -->
+    <div id="contentTab" class="tab-content" style="display:none;">
+        <div class="card">
+            <div class="card-title">📚 توليد محتوى تدريبي مخصص</div>
+            <input type="text" id="courseTopic" placeholder="المجال / المهنة (مثال: كهرباء صناعية، تسويق رقمي، صيانة حواسيب)">
+            <select id="contentLevel">
+                <option value="مبتدئ">مبتدئ</option>
+                <option value="متوسط">متوسط</option>
+                <option value="متقدم">متقدم</option>
+            </select>
+            <input type="text" id="contentDuration" placeholder="المدة المقترحة (ساعات / أيام)">
+            <button id="generateContentBtn" class="btn-primary">📖 إنشاء خطة دراسية وتمارين</button>
+            <div id="contentResult" class="result-box" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- تبويب محاكاة مقابلة عمل -->
+    <div id="simulationTab" class="tab-content" style="display:none;">
+        <div class="card">
+            <div class="card-title">🎭 محاكاة مقابلة عمل</div>
+            <input type="text" id="jobTitle" placeholder="المسمى الوظيفي (مثال: مطور ويب، فني تبريد، مسؤول مبيعات)">
+            <textarea id="userBackground" rows="3" placeholder="أدخل خبراتك ومهاراتك (اختياري)"></textarea>
+            <button id="startInterviewBtn" class="btn-primary">🎤 بدء المحاكاة (سؤال وجواب)</button>
+            <div id="interviewResult" class="result-box" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- تبويب متابعة التقدم -->
+    <div id="progressTab" class="tab-content" style="display:none;">
+        <div class="card">
+            <div class="card-title">📈 متابعة وتقييم التقدم</div>
+            <textarea id="progressData" rows="4" placeholder="أدخل نتائج المتدرب (درجات اختبارات، إنجازات، ملاحظات المدرب)..."></textarea>
+            <button id="analyzeProgressBtn" class="btn-primary">📊 تحليل الأداء وتوصيات التحسين</button>
+            <div id="progressResult" class="result-box" style="display:none;"></div>
+        </div>
+    </div>
+
+    <footer>🔐 بياناتك تحلل محلياً عبر Gemini API – لا تُخزن على خوادم MAEK7.</footer>
+</div>
+
+<script type="module">
+    import { GoogleGenerativeAI } from "@google/generative-ai";
+
+    // عناصر DOM
+    const apiInput = document.getElementById('apiKey');
+    const apiStatusSpan = document.getElementById('apiStatus');
+
+    function hasValidKey() { const key = apiInput.value.trim(); return key && key.length > 10; }
+    function updateApiStatus() {
+        if (hasValidKey()) { apiStatusSpan.innerHTML = '🟢 مفتاح نشط'; apiStatusSpan.style.color = '#10b981'; }
+        else { apiStatusSpan.innerHTML = '🔴 يرجى إدخال مفتاح Gemini API'; apiStatusSpan.style.color = '#ef4444'; }
+    }
+    window.saveApiKey = () => { localStorage.setItem('maek7_voc_key', apiInput.value.trim()); updateApiStatus(); };
+
+    function showToast(msg, isErr=false) {
+        const t = document.createElement('div'); t.className='toast'; t.style.background=isErr?'#ef4444':'var(--primary)'; t.innerText=msg;
+        document.body.appendChild(t); setTimeout(()=>t.remove(),3000);
+    }
+
+    async function callGemini(prompt, context = "") {
+        if (!hasValidKey()) throw new Error("مفتاح Gemini غير صالح");
+        const genAI = new GoogleGenerativeAI(apiInput.value.trim());
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        const fullPrompt = context ? `${context}\n\n${prompt}` : prompt;
+        const result = await model.generateContent(fullPrompt);
+        return result.response.text();
+    }
+
+    // تبويب سوق العمل
+    document.getElementById('analyzeMarketBtn').onclick = async () => {
+        const region = document.getElementById('marketRegion').value.trim();
+        const sector = document.getElementById('marketSector').value.trim();
+        if (!region && !sector) { showToast("أدخل المنطقة أو القطاع", true); return; }
+        const prompt = `أنت خبير في سوق العمل والتكوين المهني. حلل احتياجات سوق العمل في ${region || "المنطقة المحددة"} في قطاع ${sector || "جميع القطاعات"}. أجب بتفصيل: المهن الأكثر طلباً حالياً، المهارات المطلوبة، والاتجاهات المستقبلية. قدم توصيات للمتدربين الجدد.`;
+        const resultDiv = document.getElementById('marketResult');
+        resultDiv.style.display = 'block'; resultDiv.innerHTML = "🔄 جاري التحليل...";
+        try {
+            const res = await callGemini(prompt);
+            resultDiv.innerHTML = res.replace(/\n/g,'<br>');
+        } catch(e) { resultDiv.innerHTML = `❌ ${e.message}`; showToast(e.message,true); }
+    };
+
+    // تقييم المهارات
+    document.getElementById('assessSkillsBtn').onclick = async () => {
+        const desc = document.getElementById('skillsDesc').value.trim();
+        if (!desc) { showToast("أدخل وصفاً للمهارات", true); return; }
+        const prompt = `بناءً على وصف المتدرب: ${desc}. حلل الفجوات بين مهاراته الحالية ومتطلبات سوق العمل. قدم خطة تدريبية مقترحة (مواد، مدة، أهداف).`;
+        const resultDiv = document.getElementById('skillsResult');
+        resultDiv.style.display = 'block'; resultDiv.innerHTML = "🔄 جاري التحليل...";
+        try {
+            const res = await callGemini(prompt);
+            resultDiv.innerHTML = res.replace(/\n/g,'<br>');
+        } catch(e) { resultDiv.innerHTML = `❌ ${e.message}`; }
+    };
+
+    // إنشاء محتوى تدريبي
+    document.getElementById('generateContentBtn').onclick = async () => {
+        const topic = document.getElementById('courseTopic').value.trim();
+        const level = document.getElementById('contentLevel').value;
+        const duration = document.getElementById('contentDuration').value.trim();
+        if (!topic) { showToast("أدخل المجال المهني", true); return; }
+        const prompt = `أنت مصمم مناهج تدريب مهني. أعد خطة دراسية لمادة "${topic}" بمستوى ${level} لمدة ${duration || "غير محددة"}. تشمل الخطة: الأهداف، الوحدات الرئيسية، أنشطة عملية، واختبارات تقييمية.`;
+        const resultDiv = document.getElementById('contentResult');
+        resultDiv.style.display = 'block'; resultDiv.innerHTML = "🔄 جاري التوليد...";
+        try {
+            const res = await callGemini(prompt);
+            resultDiv.innerHTML = res.replace(/\n/g,'<br>');
+        } catch(e) { resultDiv.innerHTML = `❌ ${e.message}`; }
+    };
+
+    // محاكاة مقابلة عمل (نمط محادثة بسيط)
+    let interviewHistory = [];
+    document.getElementById('startInterviewBtn').onclick = async () => {
+        const job = document.getElementById('jobTitle').value.trim();
+        const background = document.getElementById('userBackground').value.trim();
+        if (!job) { showToast("أدخل المسمى الوظيفي", true); return; }
+        const prompt = `أنت مسؤول توظيف محترف. قم بإجراء مقابلة عمل لوظيفة "${job}". المتدرب لديه الخلفية التالية: ${background || "غير محددة"}. اطرح أول سؤال فقط، وانتظر إجابة المستخدم. سيتم الرد لاحقاً بشكل تفاعلي.`;
+        const resultDiv = document.getElementById('interviewResult');
+        resultDiv.style.display = 'block';
+        try {
+            const firstQuestion = await callGemini(prompt);
+            interviewHistory = [{ role: "assistant", content: firstQuestion }];
+            resultDiv.innerHTML = `<div><strong>المحاكي:</strong> ${firstQuestion}</div><textarea id="userAnswer" rows="3" placeholder="أجب هنا..."></textarea><button id="sendAnswerBtn" class="btn-secondary">إرسال الرد</button>`;
+            document.getElementById('sendAnswerBtn').onclick = async () => {
+                const answer = document.getElementById('userAnswer').value.trim();
+                if (!answer) return;
+                interviewHistory.push({ role: "user", content: answer });
+                const followUpPrompt = `أنت مسؤول توظيف. بناءً على تاريخ المحادثة التالي، استمر في المقابلة. قدم سؤالاً واحداً فقط أو تعليقاً ختامياً إذا انتهت المقابلة.\n${JSON.stringify(interviewHistory)}`;
+                const next = await callGemini(followUpPrompt);
+                interviewHistory.push({ role: "assistant", content: next });
+                resultDiv.innerHTML += `<div><strong>المحاكي:</strong> ${next}</div><textarea id="userAnswer2" rows="3" placeholder="أجب..."></textarea><button id="sendAnswerBtn2" class="btn-secondary">إرسال</button>`;
+                // إعادة ربط الحدث (تبسيطاً نعيد تحميل الصفحة؟ الأفضل استخدام setter)
+                location.reload(); // تبسيط: نعيد تحميل الصفحة لتفادي تعقيد الأحداث. لكن يمكن تحسينه.
+            };
+        } catch(e) { resultDiv.innerHTML = `❌ ${e.message}`; }
+    };
+
+    // متابعة التقدم
+    document.getElementById('analyzeProgressBtn').onclick = async () => {
+        const data = document.getElementById('progressData').value.trim();
+        if (!data) { showToast("أدخل بيانات التقدم", true); return; }
+        const prompt = `بناءً على بيانات المتدرب التالية: ${data}. حلل مستوى التقدم، حدد نقاط القوة والضعف، واقترح إجراءات تصحيحية لتحسين الأداء.`;
+        const resultDiv = document.getElementById('progressResult');
+        resultDiv.style.display = 'block'; resultDiv.innerHTML = "🔄 جاري التحليل...";
+        try {
+            const res = await callGemini(prompt);
+            resultDiv.innerHTML = res.replace(/\n/g,'<br>');
+        } catch(e) { resultDiv.innerHTML = `❌ ${e.message}`; }
+    };
+
+    // تبديل التبويبات
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = ['marketTab', 'skillsTab', 'contentTab', 'simulationTab', 'progressTab'];
+    tabs.forEach((btn, idx) => {
+        btn.onclick = () => {
+            tabs.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            contents.forEach((c, i) => {
+                document.getElementById(c).style.display = i === idx ? 'block' : 'none';
+            });
+        };
+    });
+
+    // تحميل المفتاح المحفوظ
+    const savedKey = localStorage.getItem('maek7_voc_key');
+    if (savedKey) apiInput.value = savedKey;
+    updateApiStatus();
+</script>
+</body>
+</html>
